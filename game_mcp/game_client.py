@@ -55,9 +55,9 @@ class BombClient:
         if not self.session:
             raise RuntimeError("Not connected to server. Call connect_to_server() first.")
         try:
-            print(f"Calling tool '{tool_name}' with args '{tool_args}'...")
+            # print(f"Calling tool '{tool_name}' with args '{tool_args}'...")
             response = await self.session.call_tool(tool_name, tool_args)
-            print(f"Received response: {response}")
+            # print(f"Received response: {response}")
             return response.content[0].text
         except Exception as e:
             print(f"Error calling tool '{tool_name}' with args '{tool_args}': {e}")
@@ -66,15 +66,30 @@ class BombClient:
     async def cleanup(self):
         """
         Close the MCP session and SSE connection cleanly.
+        Attempts to gracefully handle potential anyio cancel scope errors during stack aclose.
         """
         print("Cleaning up client connection...")
-        await self.exit_stack.aclose()
-        self.session = None
-        self._sse_ctx = None
-        self._read = None
-        self.write = None
-        self.server_url = None
-        print("Client connection cleaned up.\n\n\n")
+        try:
+            await self.exit_stack.aclose()
+        except RuntimeError as e:
+            if "cancel scope" in str(e):
+                print(
+                    f"Warning: Encountered a RuntimeError during AsyncExitStack.aclose(), possibly related to anyio cancel scopes: {e}")
+                print("Cleanup may not have been fully successful for all resources.")
+            else:
+                raise  # Re-raise other RuntimeErrors
+        except Exception as e:
+            print(f"An unexpected error occurred during AsyncExitStack.aclose(): {e}")
+            # Potentially re-raise or handle more specifically
+            raise
+        finally:
+            # Ensure these are reset even if aclose had issues
+            self.session = None
+            self._sse_ctx = None
+            self._read = None
+            self.write = None
+            self.server_url = None
+            print("Client connection cleanup process finished.\n\n\n")
 
 
 

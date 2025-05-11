@@ -1,76 +1,95 @@
 # crewai_bomb/tools.py
 import asyncio
-from crewai_tools import BaseTool
-from pydantic import ConfigDict # For Pydantic v2 model_config
-from game_mcp.game_client import BombClient # Import the base BombClient
+import traceback # Optional: for more detailed error logging during development
 
-# IMPORTANT: If you run into issues with asyncio event loops,
-# especially "RuntimeError: This event loop is already running",
-# you'll need to use nest_asyncio.
-# Add `import nest_asyncio` and `nest_asyncio.apply()`
-# at the beginning of your `crewai_bomb/main.py` script.
+from crewai.tools import BaseTool
 
-class GameInteractionTool(BaseTool):
-    name: str = "Game Interaction Tool"
+
+from game_mcp.game_client import Defuser as DefuserClient, Expert as ExpertClient
+
+
+class DefuserTool(BaseTool):
+    name: str = "DefuserActionTool"
     description: str = (
-        "Use this tool to interact with the bomb game. "
-        "Input should be a command string (e.g., 'state', 'cut wire 1', 'press button'). "
-        "Always use 'state' first to understand the bomb or after an action to see the result."
+        "Use this tool to perform an action on the bomb or query its state. "
+        "Input must be a specific command string recognized by the game, "
+        "e.g., 'state', 'cut wire 1', 'press button', 'release on 3'. "
+        "The tool executes the command and returns the bomb's response."
     )
-    game_client: BombClient
-    model_config = ConfigDict(extra='allow') # Pydantic v2 style
+    # This client is an instance of the DefuserClient class from game_mcp.game_client.py
+    defuser_game_client: DefuserClient
 
-    def __init__(self, game_client: BombClient, **kwargs):
+    def __init__(self, defuser_game_client: DefuserClient, **kwargs):
         super().__init__(**kwargs)
-        self.game_client = game_client
-        if not self.game_client.session:
-            # This check is important. The client should be connected.
-            print("Warning: GameClient passed to GameInteractionTool may not be connected.")
+        # Ensure class-defined name and description are used if not overridden by kwargs to super()
+        self.name = DefuserTool.name
+        self.description = DefuserTool.description
+        self.defuser_game_client = defuser_game_client
 
     def _run(self, command: str) -> str:
-        if not command:
-            return "Error: No command provided to Game Interaction Tool."
-        if not self.game_client.session:
-            return "Error: GameClient is not connected to the server. Cannot perform action."
+        """
+        Sends a command to the bomb via the DefuserClient and returns the game's response.
+        The 'command' argument is the string command formulated by the Defuser LLM agent.
+        """
+        print(f"[{self.name}] Received command from agent: '{command}'")
         try:
-            # asyncio.run can be problematic if an event loop is already running.
-            # nest_asyncio.apply() in the main script helps manage this.
-            return asyncio.run(self.game_client.process_query('game_interaction', {'command': command}))
-        except RuntimeError as e:
-            if "cannot be called from a running event loop" in str(e) or \
-               "Task attached to a different loop" in str(e):
-                # This indicates nest_asyncio might not be applied or there's a complex loop issue.
-                return (f"Asyncio loop error during game interaction: {e}. "
-                        "Ensure nest_asyncio.apply() is called at the start of your main script.")
-            return f"Error executing game interaction command '{command}': {e}"
-        except Exception as e:
-            return f"Error executing game interaction command '{command}': {e}"
+            # Ensure your DefuserClient class (from game_mcp.game_client.py)
+            # has an async method like 'perform_action' that takes the command string
+            # and interacts with the game server (e.g., using BombClient.send_command).
+            if not hasattr(self.defuser_game_client, "perform_action"):
+                err_msg = f"DefuserClient is missing the 'perform_action' method."
+                print(f"[{self.name}] Error: {err_msg}")
+                return f"Tool Error: {err_msg}"
 
-class GetManualTool(BaseTool):
-    name: str = "Get Manual Tool"
+            # Call the async method from the synchronous _run using asyncio.run
+            # nest_asyncio.apply() in main.py makes this possible.
+            response = asyncio.run(self.defuser_game_client.run(action=command))
+            print(f"[{self.name}] Response from game: '{response}'")
+            return response
+        except Exception as e:
+            print(f"[{self.name}] Error executing command '{command}': {e}")
+            # traceback.print_exc() # Uncomment for detailed stack trace during debugging
+            return f"Error: Could not execute command '{command}'. Detail: {str(e)}"
+
+class ExpertTool(BaseTool):
+    name: str = "ExpertManualTool"
     description: str = (
-        "Use this tool to retrieve the relevant section of the bomb defusal manual "
-        "for the current module. Input to this tool is ignored."
+        "Use this tool to retrieve the bomb defusal manual for the current (or a specified) bomb module. "
+        "Input should be a query or description related to the module (e.g., 'wires module', 'button rules'). "
+        "The tool returns the relevant manual content as a string."
     )
-    game_client: BombClient
-    model_config = ConfigDict(extra='allow') # Pydantic v2 style
+    # This client is an instance of the ExpertClient class from game_mcp.game_client.py
+    expert_game_client: ExpertClient
 
-    def __init__(self, game_client: BombClient, **kwargs):
+    def __init__(self, expert_game_client: ExpertClient, **kwargs):
         super().__init__(**kwargs)
-        self.game_client = game_client
-        if not self.game_client.session:
-            print("Warning: GameClient passed to GetManualTool may not be connected.")
+        # Ensure class-defined name and description are used
+        self.name = ExpertTool.name
+        self.description = ExpertTool.description
+        self.expert_game_client = expert_game_client
 
-    def _run(self, argument: str = None) -> str: # Argument is ignored
-        if not self.game_client.session:
-            return "Error: GameClient is not connected to the server. Cannot get manual."
+    def _run(self, module_query: str) -> str:
+        """
+        Retrieves manual information using the ExpertClient based on the module query.
+        The 'module_query' is the string input from the Expert LLM agent.
+        """
+        print(f"[{self.name}] Received manual query from agent: '{module_query}'")
         try:
-            return asyncio.run(self.game_client.process_query('get_manual', {}))
-        except RuntimeError as e:
-            if "cannot be called from a running event loop" in str(e) or \
-               "Task attached to a different loop" in str(e):
-                return (f"Asyncio loop error during get manual: {e}. "
-                        "Ensure nest_asyncio.apply() is called at the start of your main script.")
-            return f"Error retrieving manual: {e}"
+            # Ensure your ExpertClient class (from game_mcp.game_client.py)
+            # has an async method like 'get_manual_instructions'.
+            # This method would typically use BombClient.send_command("get_manual")
+            # and might use 'module_query' if the backend supports more specific queries.
+            if not hasattr(self.expert_game_client, "get_manual_instructions"):
+                err_msg = "ExpertClient is missing the 'get_manual_instructions' method."
+                print(f"[{self.name}] Error: {err_msg}")
+                return f"Tool Error: {err_msg}"
+
+            manual_content = asyncio.run(self.expert_game_client.get_manual_instructions(module_description=module_query))
+            print(f"[{self.name}] Manual content retrieved.")
+            # To avoid overwhelming the LLM, you might want to summarize or indicate if content is too long.
+            # For now, returning the full content.
+            return manual_content
         except Exception as e:
-            return f"Error retrieving manual: {e}"
+            print(f"[{self.name}] Error retrieving manual for query '{module_query}': {e}")
+            # traceback.print_exc() # Uncomment for detailed stack trace
+            return f"Error: Could not retrieve manual for '{module_query}'. Detail: {str(e)}"

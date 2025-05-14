@@ -154,22 +154,15 @@ async def run_two_agents(
 if __name__ == "__main__":
 
     # # --- Configuration for Experiments ---
-    # defuser_checkpoint = "HuggingFaceTB/SmolLM-135M-Instruct"
-    # expert_checkpoint = "HuggingFaceTB/SmolLM-135M-Instruct" # Can be different
-
-    defuser_checkpoint = "TinyLlama/TinyLlama-1.1B-Chat-v1.0" # <-- Using TinyLlama
-    expert_checkpoint = "TinyLlama/TinyLlama-1.1B-Chat-v1.0" # <-- Using TinyLlama for expert too
-    gemini_model_name = "gemini-2.0-flash"  # Or "gemini-pr
+    gemini_model_name = "gemini-2.0-flash"
 
 
-    # LLM Inference Parameters to Experiment With
-    # For Task 2.2, you will vary these one at a time.
-    # For Task 2.1 (Prompt Experimentation), keep these constant.
-    current_temperature = 0.7
+    # LLM Inference Parameters to Experiment With.
+    current_temperature = 0.4
     current_top_p = 0.9
     current_top_k = 50
-    current_max_new_tokens_action_advice = 500
-    current_max_new_tokens_description = 500 # Allow more tokens for description if needed
+    current_max_new_tokens_action_advice = 1000
+    current_max_new_tokens_description = 1000 # Allow more tokens for description if needed
     param_defuser_action_max_tokens = 75  # VERY LOW to force concise command
     param_defuser_action_temperature = 0.1 # Low temperature for deterministic output
 
@@ -178,13 +171,8 @@ if __name__ == "__main__":
     # --- End of Configuration ---
 
     print("Initializing LLM models...")
-    # Initialize models (consider moving device to a config or detecting automatically)
-    defuser_model_instance = SmollLLM(defuser_checkpoint, device="cpu") # Use "cuda" for GPU if available
-    expert_model_instance = SmollLLM(expert_checkpoint, device="cpu")   # Use "cuda" for GPU if available
-    print("LLM models initialized.")
 
-    print(f"Starting game with server: {game_server_url}")
-    print(f"Using Defuser: {defuser_checkpoint}, Expert: {expert_checkpoint}")
+
     try:  # Ensure your GEMINI_API_KEY environment variable is set
         defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
         expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
@@ -193,6 +181,8 @@ if __name__ == "__main__":
         print("Please ensure your GEMINI_API_KEY is set as an environment variable.")
         exit(1)
     print(f"Using Defuser & Expert Model: {gemini_model_name} (via API)")
+
+    print(f"Starting game with server: {game_server_url}")
     asyncio.run(
         run_two_agents(
             defuser_model=defuser_model_instance,

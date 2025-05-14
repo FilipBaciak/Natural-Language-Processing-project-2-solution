@@ -188,6 +188,7 @@ explode immediately."""
             # Check if the user has completed the current round's sequence
             for i, color in enumerate(self.sequence[:len(self.user_sequence)]):
                 if self.get_color_mapping(color, i) != self.user_sequence[i]:
+                    print("Correct mapping is: ", self.get_color_mapping(color, i))
                     return ActionResult.EXPLODED
 
             if len(self.user_sequence) == self.current_round + 1:

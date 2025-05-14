@@ -62,9 +62,7 @@ pip install -r requirements.txt
 
 Start the game server:
 
-```bash
-python -m game_mcp.game_server --host 0.0.0.0 --port 8080
-```
+```bash```
 
 #### 🛠️ MCP Server Tools
 

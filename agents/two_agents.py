@@ -80,7 +80,7 @@ async def run_two_agents(
             # 3) Expert retrieves the relevant manual text
             manual_text = await expert_client.run()
             print("\n[EXPERT sees MANUAL]:")
-            # print(manual_text) # Uncomment for verbose logging if needed
+            print(manual_text) # Uncomment for verbose logging if needed
 
             # 4) Expert LLM uses the manual text + Defuser's GENERATED DESCRIPTION
             #    to generate instructions
@@ -115,65 +115,6 @@ async def run_two_agents(
             print("\n[DEFUSER RAW ACTION OUTPUT]:")
             print(def_action_raw)
 
-            # 6) Attempt to extract a known command from def_action_raw
-            # action = "help"  # Default action
-            #
-            # # Pre-compile command patterns for efficiency if this function is called many times
-            # # For now, defining them here is fine.
-            # command_patterns_map = {
-            #     "cut": r"cut wire \d+",
-            #     "press": r"press (?:red|blue|yellow|white|black|green|orange|purple|detonate|abort|submit|next|button(?: \d+)?)",
-            #     "hold": r"hold",
-            #     "release": r"release on \d",
-            #     "state": r"state",
-            #     "help": r"help"
-            # }
-            # # Order of preference for commands (lower index = higher priority)
-            # ordered_command_keywords = ["cut", "press", "hold", "release", "state", "help"]
-            #
-            # lines = def_action_raw.splitlines()
-            # raw_output_lower = def_action_raw.lower()  # Used for some case-insensitive searches
-            #
-            # # --- New Parsing Logic ---
-            # found_command = None
-            #
-            # # 1. Check for a command on its own line (last line prioritized)
-            # for line in reversed(lines):
-            #     clean_line = line.strip().lower()
-            #     if not clean_line:
-            #         continue
-            #     for keyword in ordered_command_keywords:
-            #         if re.fullmatch(command_patterns_map[keyword], clean_line):
-            #             found_command = clean_line
-            #             break
-            #     if found_command:
-            #         break
-            #
-            # # 2. If no full-line command, check for quoted commands (single or double) anywhere
-            # if not found_command:
-            #     for quote_char in ["'", '"']:
-            #         pattern = re.compile(f"{quote_char}({'|'.join(command_patterns_map.values())}){quote_char}")
-            #         match = pattern.search(raw_output_lower)
-            #         if match:
-            #             found_command = match.group(1).strip()
-            #             break
-            #
-            # # 3.  If still no command, check for a command as the very first thing on any line.
-            # if not found_command:
-            #     for line in lines:
-            #         clean_line = line.strip().lower()
-            #         for keyword in ordered_command_keywords:
-            #             if re.match(f"^{command_patterns_map[keyword]}", clean_line):
-            #                 found_command = clean_line.split()[0] if keyword in ["hold", "state",
-            #                                                                      "help"] else clean_line
-            #                 break
-            #         if found_command:
-            #             break
-            #
-            # action = found_command if found_command else "help"  # Use found command or default
-            #
-            # print("\n[DEFUSER PARSED ACTION]:", action)
-            # # ... (rest of the code: sending action to server, etc.)
 
             # 6) Attempt to extract a known command from def_action_raw
             #    If no recognized command is found, default to "help"
@@ -245,8 +186,8 @@ if __name__ == "__main__":
     print(f"Starting game with server: {game_server_url}")
     print(f"Using Defuser: {defuser_checkpoint}, Expert: {expert_checkpoint}")
     try:  # Ensure your GEMINI_API_KEY environment variable is set
-        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDKA3YworKngvk4n-gBy1qlc0r_LuFXzlE")
-        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDKA3YworKngvk4n-gBy1qlc0r_LuFXzlE")
+        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
+        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
     except ValueError as e:
         print(f"Error initializing GeminiAPIModel: {e}")
         print("Please ensure your GEMINI_API_KEY is set as an environment variable.")

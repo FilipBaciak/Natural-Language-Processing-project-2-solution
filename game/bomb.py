@@ -7,7 +7,8 @@ from game.modules.module import ActionResult
 
 class Bomb:
     def __init__(self):
-        self.modules = [RegularWiresModule(), ButtonModule(), SimonSaysModule(), MemoryModule()]
+        # self.modules = [RegularWiresModule(), ButtonModule(), SimonSaysModule(), MemoryModule()]
+        self.modules = [SimonSaysModule()]
         self.current_module = 0
         self.exploded = False
         self.disarmed = False

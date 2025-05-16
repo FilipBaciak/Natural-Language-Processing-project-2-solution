@@ -38,6 +38,7 @@ async def run_two_agents(
     defuser_client = Defuser()
     expert_client = Expert()
     exchange_count = 0
+    history = []
 
     print("--- Starting New Agent Run ---")
     print(f"LLM Parameters: Temperature={temperature}, Top-p={top_p}, Top-k={top_k}")
@@ -85,7 +86,7 @@ async def run_two_agents(
             # 4) Expert LLM uses the manual text + Defuser's GENERATED DESCRIPTION
             #    to generate instructions
             print("\n[EXPERT LLM is generating advice...]")
-            exp_messages = expert_prompt(manual_text, defuser_description_for_expert) # Pass the description
+            exp_messages = expert_prompt(manual_text, defuser_description_for_expert, history) # Pass the description
             expert_advice_raw = expert_model.generate_response(
                 exp_messages,
                 max_new_tokens=max_new_tokens_action_advice,
@@ -112,6 +113,8 @@ async def run_two_agents(
                 top_k=top_k,
                 do_sample=True
             )
+            history.append(def_action_raw)
+
             print("\n[DEFUSER RAW ACTION OUTPUT]:")
             print(def_action_raw)
 
@@ -174,8 +177,8 @@ if __name__ == "__main__":
 
 
     try:  # Ensure your GEMINI_API_KEY environment variable is set
-        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
-        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyBtvtHMWRLN_bMsdDd3eYwgqp3UJdU42yA")
+        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDjVs7sBB48q3k3agL4HeOjZOWdwSEO-nU")
+        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDjVs7sBB48q3k3agL4HeOjZOWdwSEO-nU")
     except ValueError as e:
         print(f"Error initializing GeminiAPIModel: {e}")
         print("Please ensure your GEMINI_API_KEY is set as an environment variable.")

@@ -2,7 +2,7 @@
 from typing import List, Dict
 import json
 
-# --- Configuration 2: Structured Markdown Prompts ---
+# --- Configuration Main: Structured Markdown Prompts ---
 
 def defuser_observation_prompt(bomb_state: str, history: List[Dict[str, str]] = []) -> List[Dict[str, str]]:
     """
@@ -23,6 +23,7 @@ def defuser_observation_prompt(bomb_state: str, history: List[Dict[str, str]] = 
         "Be factual and descriptive."
         "Describe everything you see and know about the bomb -- all the details."
         "The expert won't be able to ask you a question, soo be sure not to miss anything."
+        "In particular, you should describe all the numbers you can see such as stage number."
     )
     user_content = (
         f"--- Bomb State Information Start ---\n{bomb_state}\n--- Bomb State Information End ---\n\n"
@@ -45,21 +46,20 @@ def defuser_prompt(bomb_state: str, expert_advice: str) -> List[Dict[str, str]]:
     system_msg = (
         "You are the Defuser Bot. Your ONLY task is to read the bomb state and then the expert’s advice, "
         "and emit exactly ONE valid game command—no explanations, no extra text. "
+        "There is only ONE exception to this rule:"
+        "If you are in the memory module, print the label and position of the button you should press and then the command in the next line."
         "If the expert gives advice, you MUST follow it verbatim. Do NOT contradict or ignore it. "
         "Allowed commands (exactly as written):\n"
         "  • cut wire <number>\n"
         "  • press <color_or_label>\n"
         "  • hold\n"
         "  • release on <number>\n"
-        # "  • state\n"
-        # "  • help\n"
-        # "If the expert’s advice is not one of these, respond with the expert’s recommended valid command. "
-        # "If you cannot parse their advice into a valid command, respond “help”."
     )
 
     user_msg = (
         f"BOMB_STATE:\n{bomb_state}\n\n"
         f"EXPERT_ADVICE:\n{expert_advice}\n\n"
+        "IF YOU ARE IN THE MEMORY MODULE, PRINT THE LABEL AND POSITION (with appropriate names) OF THE BUTTON YOU SHOULD PRESS AND THEN THE COMMAND IN THE NEXT LINE."
         "OUTPUT COMMAND ONLY:"
     )
 
@@ -84,13 +84,10 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
         "You are an expert Bomb Defusal AI. Your role is to provide precise, actionable, single-step instructions to a human Defuser. "
         "You will be given a description of what the Defuser sees and an excerpt from the bomb defusal manual. "
         "Repeat to yourself the reasing for choosing the next action. "
-        # "DO NOT ask questions. DO NOT offer alternatives. DO NOT explain your reasoning unless it's part of the command itself (e.g., 'Cut the red wire because...'). "
         "Aim for instructions that directly translate to game commands, e.g., 'Cut the third wire from the top', 'Press the blue button', 'Press the button labeled Detonate'. "
         "If the provided manual excerpt is for the 'Simon Says' module, pay EXTREMELY close attention to the special instructions for it provided in the user prompt."
     )
 
-    # Note: The detailed Simon Says instructions are now more integrated into the user prompt
-    # and are explicitly prefaced to apply *only* if the manual_text is for Simon Says.
     user_content = f"""
     **CONTEXT:**
     You are the Bomb Defusal Expert. Your human partner, the Defuser, is at the bomb.
@@ -144,7 +141,8 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
         *   If the button says "Press a colored button to start sequence", use the first light in the flashing sequence.
         *   If N inputs were pressed already, use the light in the flashing sequence which is at the position corresponding to the N+1.
         *   Analyse the number of inputs provided -- use the adequate light in the flashing sequence.
-        *   Provide the reasoning for your choice and make sure that it is correct, as it is a crucial part.        
+        *   Provide the reasoning for your choice and make sure that it is correct, as it is a crucial part.  
+        *   Reflect upon your choice and double check that it is correct.     
         *   For the chosen color in the flashing sequence, in order:
             a.  Note its color (e.g., Red).
             b.  Note its position in the flashing sequence (e.g., 1st, 2nd, 3rd).

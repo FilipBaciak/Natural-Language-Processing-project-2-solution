@@ -164,8 +164,8 @@ if __name__ == "__main__":
     current_temperature = 0.4
     current_top_p = 0.9
     current_top_k = 50
-    current_max_new_tokens_action_advice = 1000
-    current_max_new_tokens_description = 1000 # Allow more tokens for description if needed
+    current_max_new_tokens_action_advice = 2000
+    current_max_new_tokens_description = 2000 # Allow more tokens for description if needed
     param_defuser_action_max_tokens = 75  # VERY LOW to force concise command
     param_defuser_action_temperature = 0.1 # Low temperature for deterministic output
 

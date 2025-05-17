@@ -108,6 +108,17 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
     --- Manual Excerpt End ---
 
     **GENERAL INSTRUCTIONS FOR ALL MODULES:**
+
+    2.  **Clarity:** Your instruction must be unambiguous and tell the Defuser exactly what to do next.
+    3.  **Reasoning:** 
+    4.  **Single Action:** Provide only one action. The Defuser will report back, and you will then instruct the next step. 
+
+    **You are also provided with the following history of the Defuser's actions:**
+    {" ".join(history)}
+
+    **SPECIAL INSTRUCTIONS -- APPLY THESE *ONLY IF* THE MANUAL EXCERPT IS FOR THE 'SIMON SAYS' MODULE:**
+    The Simon Says module requires careful interpretation of the manual.
+    
     0.  IGNORE THE ROUND NUMBER PROVIDED BY THE DEFUSER ENTIRELY 
     1.  **Vowels:** For any checks involving vowels in the bomb's serial number, the vowels are A, E, I, O, U. 
     Y is NOT a vowel.
@@ -119,16 +130,7 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
     When you find a vowel or reach the end of the serial number, tell yourself whether you found a vowel or not.
     ---
 
-    2.  **Clarity:** Your instruction must be unambiguous and tell the Defuser exactly what to do next.
-    3.  **Reasoning:** 
-    4.  **Single Action:** Provide only one action. The Defuser will report back, and you will then instruct the next step. 
-
-    **You are also provided with the following history of the Defuser's actions:**
-    {" ".join(history)}
-
-    **SPECIAL INSTRUCTIONS -- APPLY THESE *ONLY IF* THE MANUAL EXCERPT IS FOR THE 'SIMON SAYS' MODULE:**
-    The Simon Says module requires careful interpretation of the manual.
-    1.  **Manual Error Correction / Interpretation:**
+    2.  **Manual Error Correction / Interpretation:**
         *   The manual contains an error or can be misleading regarding its "Round N".
         *   You MUST interpret the manual's columns as corresponding to the *position of the light in the flashing sequence*.
         *   Specifically:
@@ -136,7 +138,7 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
             *   For the **2nd** flashing light, use the manual's information that corresponds to "Round 2".
             *   For the **3rd** flashing light (and any subsequent, if applicable), use the manual's information that corresponds to "Round 3".
         *   This positional mapping (1st flash -> Round 1, 2nd flash -> Round 2 column, etc.) is CRITICAL.
-    2.  **Determining Button Presses:**
+    3.  **Determining Button Presses:**
         *   The Defuser will report a sequence of flashing light colors and the inputs.
         *   If none inputs were pressed yet, use the first light in the flashing sequence.
         *   If the button says "Press a colored button to start sequence", use the first light in the flashing sequence.
@@ -149,13 +151,13 @@ def expert_prompt(manual_text: str, defuser_description: str, history: List[str]
             c.  Consult the manual: Find the row for the *flashing color* (e.g., Red).
             d.  In that row, find the column corresponding to its *position in the sequence* (as per rule 1 above, e.g., for 1st flash, use Round 1 column).
             e.  The entry in that cell is the color of the button the Defuser should press for *that specific flash*.
-    3.  **Instruction Format for Simon Says:**
+    4.  **Instruction Format for Simon Says:**
         *   Example: If the flashing sequence is "Red (1st), Blue (2nd)" and the manual lookup (applying rule 1 & 2) determines:
             *   Red (1st flash) -> Press Yellow
             *   Blue (2nd flash) -> Press Green
         *   Then your instruction should be: "Press Yellow" if no buttons were pressed yet, or "Press Green" if the Yellow button was pressed already.
 
-    4.  **Serial Number Vowel Check (Simon Says Specific):** The manual section for Simon Says will have different sub-tables based on whether the bomb's serial number contains a vowel. Use the Vowel definition from "GENERAL INSTRUCTIONS".
+    5  .  **Serial Number Vowel Check (Simon Says Specific):** The manual section for Simon Says will have different sub-tables based on whether the bomb's serial number contains a vowel. Use the Vowel definition from "GENERAL INSTRUCTIONS".
 
     **YOUR TASK:**
     Based on the Defuser's report, the manual excerpt, and ALL relevant instructions above (general and Simon Says-specific if applicable), what is the single, most direct, actionable command you give to the Defuser for their NEXT action?

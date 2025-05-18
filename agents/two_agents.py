@@ -13,10 +13,10 @@ async def run_two_agents(
         defuser_model: Any, # Or Union[HFModel, GeminiAPIModel] if you define it
         expert_model: Any,  # Or Union[HFModel, GeminiAPIModel]
         server_url: str = "http://0.0.0.0:8080",
-        max_new_tokens_action_advice: int = 500, # Max tokens for expert advice and defuser action
-        max_new_tokens_description: int = 750,  # Max tokens for defuser's description
-        max_new_tokens_defuser_action: int = 20,
-        temperature: float = 0.7,
+        max_new_tokens_action_advice: int = 2000, # Max tokens for expert advice and defuser action
+        max_new_tokens_description: int = 1000,  # Max tokens for defuser's description
+        max_new_tokens_defuser_action: int = 100,
+        temperature: float = 0.4,
         top_p: float = 0.9,
         top_k: int = 50
 ) -> None:
@@ -158,17 +158,13 @@ if __name__ == "__main__":
 
     # # --- Configuration for Experiments ---
     gemini_model_name = "gemini-2.0-flash"
-
-
     # LLM Inference Parameters to Experiment With.
-    current_temperature = 0.4
-    current_top_p = 0.9
-    current_top_k = 50
-    current_max_new_tokens_action_advice = 2000
-    current_max_new_tokens_description = 2000 # Allow more tokens for description if needed
-    param_defuser_action_max_tokens = 75  # VERY LOW to force concise command
-    param_defuser_action_temperature = 0.1 # Low temperature for deterministic output
-
+    current_temperature = 0.1
+    current_top_p = 1
+    current_top_k = None
+    current_max_new_tokens_action_advice = 2000 # Allow more tokens for reasoning if needed
+    current_max_new_tokens_description = 1000
+    param_defuser_action_max_tokens = 100  # Low to enforce consistent commands
     # Server URL
     game_server_url = "http://localhost:8080" # Ensure this matches your server
     # --- End of Configuration ---

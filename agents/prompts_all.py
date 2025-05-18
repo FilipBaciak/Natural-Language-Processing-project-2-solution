@@ -3,10 +3,7 @@ import json
 
 
 # This file contains many prompt configurations used in the experiments
-# It is not an file that should be a part of an executed script
-
-
-
+# It is not a file that should be a part of an executed script
 
 # --- Configuration 1 ---
 # Natural language, without reasoning
@@ -110,8 +107,7 @@ def expert_prompt1(manual_text: str, defuser_description: str, history: List[str
 
 
 # --- Configuration 2 ---
-#Structured markdowns without reasoning and explicit instructions
-from typing import List, Dict
+#Structured markdowns without reasoning and explicit instructions + allowed reasoning
 
 def defuser_observation_prompt2(bomb_state: str, history: List[Dict[str, str]] = []) -> List[Dict[str, str]]:
     """
@@ -178,7 +174,8 @@ def expert_prompt2(manual_text: str, defuser_description: str, history: List[str
     """
 
     user_content = (
-        "You are a Bomb Defusal Expert. Provide a single, precise, actionable command "
+        "You are a Bomb Defusal Expert. Provide a single, precise, actionable command."
+        "You can reason about your answer, but at the end you must give a final command for the defuser."
         "for the Defuser based on their report and the manual. "
         "If the module is Simon Says, adhere strictly to the Simon Says specific instructions provided in the user message."
         f"""
@@ -221,10 +218,8 @@ def expert_prompt2(manual_text: str, defuser_description: str, history: List[str
 
 
 # --- Configuration 3 ---
-#Jsons without reasoning and explicit instructions
+#Jsons without reasoning + reasoning + spell checking
 
-
-from typing import List, Dict
 
 
 def defuser_observation_prompt3(bomb_state: str, history: List[Dict[str, str]] = []) -> List[Dict[str, str]]:
@@ -236,7 +231,7 @@ def defuser_observation_prompt3(bomb_state: str, history: List[Dict[str, str]] =
     :param history: A list of past interactions (kept in signature, not used in this version).
     :return: A list of dicts for the Defuser LLM to generate a description.
     """
-    user_content = (
+    system_msg = (
         "You are the Defuser. Your Expert partner cannot see the bomb or ask clarifying questions, "
         "so your description must be complete. "
         "Factually describe everything visible on the module: number of wires and their colors, "
@@ -302,6 +297,7 @@ def expert_prompt3(manual_text: str, defuser_description: str, history: List[str
         "You are a Bomb Defusal Expert. Provide a single, precise, actionable command "
         "for the Defuser based on their report and the manual. "
         "If the module is Simon Says, adhere strictly to the Simon Says specific instructions provided in the user message."
+        "You can reason about your answer, but at the end you must give a final command for the defuser."
     )
 
     user_content = f"""
@@ -321,7 +317,14 @@ def expert_prompt3(manual_text: str, defuser_description: str, history: List[str
         --- Defuser's Actions End ---
 
         **Simon Says Module Instructions (Apply *only if* this is the Simon Says module):**
-        1.  **Serial Vowel Rule:** Check if the bomb's serial number contains a vowel (A, E, I, O, U only; Y is not a vowel). This determines which part of the Simon Says manual to use.
+            1.  **Vowels:** For any checks involving vowels in the bomb's serial number, the vowels are A, E, I, O, U. 
+            Y is NOT a vowel.
+            The vowels are: A, E, I, O, U -- serial number contains an vowel only if it contains an A, E, I, O, or U.
+            Think whether the serial number contains an A, E, I, O, or U to choose the appropriate manual part.
+            Pay special attention to whether the serial number contains an A, E, I, O, or U - it is of utmost importance.
+            First repeat the serial number to yourself and then think whether it contains an A, E, I, O, or U.
+            Repeat each letter of the serial number to yourself and then think whether it is one of the vowels A, E, I, O or U.
+            When you find a vowel or reach the end of the serial number, tell yourself whether you found a vowel or not.
         2.  **Flash-to-Manual Mapping:**
             *   The manual's "Round 1" column applies to the 1st light in the flashing sequence.
             *   "Round 2" column applies to the 2nd light.
@@ -341,7 +344,7 @@ def expert_prompt3(manual_text: str, defuser_description: str, history: List[str
 
 
 # --- Configuration 4:  ---
-# Json + Structured Markdown Prompts + explicit reasoning enforcement
+# Json + Structured Markdown Prompts + explicit reasoning enforcement + veeeery detailed instructions
 
 def defuser_observation_prompt4(bomb_state: str, history: List[Dict[str, str]] = []) -> List[Dict[str, str]]:
     """
@@ -351,18 +354,18 @@ def defuser_observation_prompt4(bomb_state: str, history: List[Dict[str, str]] =
     :param bomb_state: Current bomb state text from the server.
     :return: A list of dicts for the Defuser LLM to generate a description.
     """
-    window = history[-5:]
     system_msg = (
         "You are the Defuser. You are looking at a bomb module. "
         "Your primary task right now is to clearly and concisely describe what you see to your Expert partner. "
         "Your Expert partner has the manual but cannot see the bomb. "
         "Focus on details that would be relevant for identifying the module and its components "
         "based on a manual. For example, mention the number of wires and their colors, serial number, "
-        "any symbols, numbers, button labels, or the sequence of flashing lights. "
+        "any symbols, numbers, button labels, or the sequence of flashing lights or round number. "
         "Be factual and descriptive."
         "Describe everything you see and know about the bomb -- all the details."
+        "You should always be consistent with the Bomb State."
         "The expert won't be able to ask you a question, soo be sure not to miss anything."
-        "In particular, you should describe all the numbers you can see such as stage number."
+        "In particular, you should describe all the numbers you can see such as stage number (in memory module)."
     )
     user_content = (
         f"--- Bomb State Information Start ---\n{bomb_state}\n--- Bomb State Information End ---\n\n"

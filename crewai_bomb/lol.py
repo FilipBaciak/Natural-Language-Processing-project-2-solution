@@ -99,37 +99,44 @@ crew = Crew(
 )
 
 # --- 5. Game Loop ---
+
+_defuser_tool = DefuserTool()
+_expert_tool = ExpertTool()
+
 async def main_loop():
     context = {}
     while True:
-        # 1) Defuser: get raw state
-        raw_state = await defuser_agent.run_tool("DefuserTool", {"prompt": "state"})
+        # 1) Defuser: get raw state from the server via DefuserTool
+        raw_state = await _defuser_tool._run("state")
         print("[Raw State]:", raw_state)
-        if "disarmed" in raw_state.lower() or "exploded" in raw_state.lower():
-            print("Game Over: ", raw_state)
+        if any(k in raw_state.lower() for k in ["disarmed", "exploded"]):
+            print("Game Over:", raw_state)
             break
 
         context['last_defuser_observation'] = raw_state
 
-        # 2) Expert: fetch manual and advice
-        manual_text = await expert_agent.run_tool("ExpertTool", {"query": raw_state})
+        # 2) Expert: fetch manual via ExpertTool
+        manual_text = await _expert_tool._run(raw_state)
         context['manual_text'] = manual_text
 
+        # 3) Expert: generate advice using its LLM
         advice_prompt = expert_to_defuser(context)
         advice = await expert_agent.chat(advice_prompt)
         print("[Expert Advice]:", advice)
         context['last_expert_advice'] = advice
 
-        # 3) Defuser: decide action
-        action_prompt = f"### Expert Advice\n{advice}\n### Action"
+        # 4) Defuser: decide action using its LLM
+        action_prompt = f"""### Expert Advice
+            {advice}
+            ### Action"""
         action = await defuser_agent.chat(action_prompt)
         print("[Defuser Action]:", action)
 
-        # 4) Defuser: send action
-        result = await defuser_agent.run_tool("DefuserTool", {"prompt": action})
+        # 5) Defuser: send action to server
+        result = await _defuser_tool._run(action)
         print("[Server Response]:", result)
-        if "disarmed" in result.lower() or "exploded" in result.lower():
-            print("Game Over: ", result)
+        if any(k in result.lower() for k in ["disarmed", "exploded"]):
+            print("Game Over:", result)
             break
 
 if __name__ == "__main__":

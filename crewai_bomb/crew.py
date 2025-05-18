@@ -6,7 +6,7 @@ from crewai import Agent, Task, Crew, Process
 from langchain_google_genai import ChatGoogleGenerativeAI
 
 # Import your custom tools
-from crewai_bomb.tools import DefuserTool, ExpertTool
+from crewai_bomb.tools_old import DefuserTool, ExpertTool
 
 # Import game clients
 from game_mcp.game_client import Defuser as DefuserClient, Expert as ExpertClient

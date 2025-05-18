@@ -1,5 +1,6 @@
 import asyncio
 import json # For potential JSON parsing in future experiments
+import os
 import re
 from typing import Any
 
@@ -171,10 +172,16 @@ if __name__ == "__main__":
 
     print("Initializing LLM models...")
 
+    try:
+        with open("gemini_API_key.json", "r") as f:
+            data = json.load(f)
+            gemini_key = data.get("api_key")
+    except FileNotFoundError:
+        gemini_key = os.getenv("GEMINI_API_KEY")
 
     try:  # Ensure your GEMINI_API_KEY environment variable is set
-        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDjVs7sBB48q3k3agL4HeOjZOWdwSEO-nU")
-        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key="AIzaSyDjVs7sBB48q3k3agL4HeOjZOWdwSEO-nU")
+        defuser_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key=gemini_key)
+        expert_model_instance = GeminiAPIModel(model_name=gemini_model_name, api_key=gemini_key)
     except ValueError as e:
         print(f"Error initializing GeminiAPIModel: {e}")
         print("Please ensure your GEMINI_API_KEY is set as an environment variable.")

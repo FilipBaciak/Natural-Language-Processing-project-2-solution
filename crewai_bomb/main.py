@@ -11,27 +11,62 @@ async def run_crew_defusal(server_url: str, gemini_api_key: str):
     # Apply nest_asyncio once at the beginning.
     # This is crucial for allowing asyncio.run() calls from tools
     # if the main script or CrewAI itself runs within an event loop.
-    # nest_asyncio.apply()
-
+    nest_asyncio.apply()
 
     try:
-
-        # Create the Bomb Defusal Crew, passing the connected client
+        # Create the Bomb Defusal Crew
         bomb_defusal_crew_dict = await create_bomb_defusal_crew(server_url, gemini_api_key)
-
-        print("\nKicking off the Bomb Defusal Crew...")
-        # The `inputs` for kickoff would be used if your first task in the crew
-        # explicitly requires input from the kickoff call.
-        # In our current setup, the first task (task_describe_bomb) initiates its own action.
-        # So, inputs={} or no inputs argument is fine.
         bomb_defusal_crew = bomb_defusal_crew_dict["crew"]
-        result = bomb_defusal_crew.kickoff()
 
-        print("\n----------------------------------------------------")
-        print("Crew execution finished.")
-        print("Final Result/Output of the last task:")
-        print(result)
-        print("----------------------------------------------------")
+        print("\nStarting the Bomb Defusal Crew in a loop...")
+
+        game_continues = True
+        iteration_count = 0
+        max_iterations = 150  # Safety break to prevent infinite loops
+        final_status_message = "Game ended due to maximum iterations."
+
+        while game_continues and iteration_count < max_iterations:
+            iteration_count += 1
+            print(f"\n--- Starting Crew Iteration {iteration_count} ---")
+
+            # The `inputs` for kickoff. For our current task setup in crew.py,
+            # the first task (task_observe_and_describe) always starts by fetching the current bomb state.
+            # Therefore, no specific inputs are strictly needed to carry over state between iterations here.
+            # If your tasks were designed to need explicit context from the *previous full crew run*,
+            # this is where you'd pass it, e.g., inputs={'previous_outcome': last_result}
+            # The agents have their memory and can use it to remember the previous inputs.
+            kickoff_inputs = {}
+
+            result = await bomb_defusal_crew.kickoff_async(inputs=kickoff_inputs)
+
+            print("\n----------------------------------------------------")
+            print(f"Output of Crew Iteration {iteration_count}:")
+            print(result)  # This 'result' is the output of the last task in the crew sequence
+            print("----------------------------------------------------")
+
+            # Check for game-ending conditions in the result string
+            result = str(result)
+            result_lower = result.lower()
+
+            if "bomb successfully disarmed" in result_lower or \
+                    "bomb disarmed!" in result_lower:
+                final_status_message = "BOMB SUCCESSFULLY DISARMED!"
+                print(f"Game Concluded: {final_status_message}")
+                game_continues = False
+            elif "bomb has exploded" in result_lower or \
+                    "bomb exploded!" in result_lower or \
+                    "boom!" in result_lower:  # "BOOM!" is a common server response for explosion
+                final_status_message = "BOMB EXPLODED!"
+                print(f"Game Concluded: {final_status_message}")
+                game_continues = False
+            elif "game over" in result_lower:  # Check if an agent explicitly states "game over"
+                # This could happen if task_observe_and_describe sees a pre-existing ended state
+                final_status_message = f"Game Over: {result}"
+                print(f"Game Concluded: {final_status_message}")
+                game_continues = False
+
+            if not game_continues and iteration_count == max_iterations:  # Overwrite if max_iterations hit
+                final_status_message = f"Game ended: Reached maximum iterations ({max_iterations}). Last result: {result}"
 
         # You might want to check the game_client's last known state or parse 'result'
         # to determine if the bomb was defused or exploded for a final status message.
@@ -76,6 +111,8 @@ def main():
         asyncio.run(run_crew_defusal(args.url, args.gemini_api_key))
     except KeyboardInterrupt:
         print("\nUser interrupted. Exiting...")
+        import sys
+        sys.exit(0)
     except Exception as e:
         print(f"Main Error: An unexpected error occurred: {e}")
         import traceback

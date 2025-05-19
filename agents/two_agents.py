@@ -7,7 +7,7 @@ from typing import Any
 # Import from agents.prompts (where you've defined your experimental prompts)
 from agents.prompts import expert_prompt, defuser_prompt, defuser_observation_prompt
 from game_mcp.game_client import Defuser, Expert
-from agents.models import HFModel, SmollLLM, GeminiAPIModel
+from agents.models import GeminiAPIModel
 
 
 async def run_two_agents(

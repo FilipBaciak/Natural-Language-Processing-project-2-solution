@@ -1,12 +1,16 @@
 # crewai_bomb/tools.py
 import asyncio
+import time
 import traceback # Optional: for more detailed error logging during development
+from concurrent.futures import ThreadPoolExecutor
 from typing import Type
 
+from click import command
 from crewai.tools import BaseTool
 
 
 from game_mcp.game_client import Defuser as DefuserClient, Expert as ExpertClient
+
 
 class DefuserTool(BaseTool):
     name: str = "DefuserActionTool"
@@ -18,31 +22,35 @@ class DefuserTool(BaseTool):
     )
     # This client is an instance of the DefuserClient class from game_mcp.game_client.py
     defuser_game_client: Type[DefuserClient] = None
+    loop: asyncio.AbstractEventLoop = None
 
-    def __init__(self, defuser_game_client: DefuserClient, **kwargs):
+
+    def __init__(self, server_url: str, **kwargs):
         super().__init__(**kwargs)
         # Ensure class-defined name and description are used if not overridden by kwargs to super()
         # self.name = DefuserTool.name?
         # self.description = DefuserTool.description
-        self.defuser_game_client = defuser_game_client
+        self.defuser_game_client = DefuserClient()
+        self.loop = asyncio.new_event_loop()
+        self.loop.run_until_complete(self.defuser_game_client.connect_to_server(server_url))
 
     def _run(self, command: str) -> str:
         """
-        Sends a command to the bomb via the DefuserClient and returns the game's response.
-        The 'command' argument is the string command formulated by the Defuser LLM agent.
+        Executes a command using the DefuserClient and returns the result.
+        The 'command' is the string input from the Defuser LLM agent.
         """
-        print(f"[{self.name}] Received command from agent: '{command}'")
+        print(f"[{self.name}] Received command: {command}.")
         try:
-            # Call the async method from the synchronous _run using asyncio.run
-            # nest_asyncio.apply() in main.py makes this possible.
-            # response = asyncio.run(self.defuser_game_client.run(action=command))
-            response = self.defuser_game_client.run(action=command)
-            print(f"[{self.name}] Response from game: '{response}'")
-            return response
+
+            result = self.loop.run_until_complete(self.defuser_game_client.run(command))
+            print(f"[{self.name}] Command executed. Result: {result}")
+            return result
         except Exception as e:
-            print(f"[{self.name}] Error executing command '{command}': {e}")
-            # traceback.print_exc() # Uncomment for detailed stack trace during debugging
-            return f"Error: Could not execute command '{command}'. Detail: {str(e)}"
+            print(f"[{self.name}] Error retrieving executing command: {e}")
+            # traceback.print_exc() # Uncomment for detailed stack trace
+            return f"Error: Could not execute command'. Detail: {str(e)}"
+
+
 
     def clean_up(self):
         self.defuser_game_client.cleanup()
@@ -61,23 +69,27 @@ class ExpertTool(BaseTool):
     )
     # This client is an instance of the ExpertClient class from game_mcp.game_client.py
     expert_game_client: Type[ExpertClient] = None
+    loop: asyncio.AbstractEventLoop = None
 
-    def __init__(self, expert_game_client: ExpertClient, **kwargs):
+
+    def __init__(self, server_url: str, **kwargs):
         super().__init__(**kwargs)
-        # Ensure class-defined name and description are used
-        # self.name = ExpertTool.name
-        # self.description = ExpertTool.description
-        self.expert_game_client = expert_game_client
+        # Ensure class-defined name and description are used if not overridden by kwargs to super()
+        # self.name = DefuserTool.name?
+        # self.description = DefuserTool.description
+        self.expert_game_client = ExpertClient()
+        self.loop = asyncio.new_event_loop()
+        self.loop.run_until_complete(self.expert_game_client.connect_to_server(server_url))
 
     def _run(self) -> str:
         """
         Retrieves manual information using the ExpertClient based on the module query.
         The 'module_query' is the string input from the Expert LLM agent.
         """
-        print(f"[{self.name}] Received manual query from agent.'")
+        print(f"[{self.name}] Received manual query from agent.")
         try:
 
-            manual_content = self.expert_game_client.run()
+            manual_content = self.loop.run_until_complete(self.expert_game_client.run())
             print(f"[{self.name}] Manual content retrieved.")
             # To avoid overwhelming the LLM, you might want to summarize or indicate if content is too long.
             # For now, returning the full content.

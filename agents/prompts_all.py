@@ -360,12 +360,12 @@ def defuser_observation_prompt4(bomb_state: str, history: List[Dict[str, str]] =
         "Your Expert partner has the manual but cannot see the bomb. "
         "Focus on details that would be relevant for identifying the module and its components "
         "based on a manual. For example, mention the number of wires and their colors, serial number, "
-        "any symbols, numbers, button labels, or the sequence of flashing lights or round number. "
+        "any symbols, numbers, button labels, or the sequence of flashing lights. "
         "Be factual and descriptive."
         "Describe everything you see and know about the bomb -- all the details."
-        "You should always be consistent with the Bomb State."
         "The expert won't be able to ask you a question, soo be sure not to miss anything."
-        "In particular, you should describe all the numbers you can see such as stage number (in memory module)."
+        "In particular, you should describe all the numbers you can see such as stage number."
+        "Do not say anything else -- just the information in the bomb state. "
     )
     user_content = (
         f"--- Bomb State Information Start ---\n{bomb_state}\n--- Bomb State Information End ---\n\n"
@@ -388,19 +388,26 @@ def defuser_prompt4(bomb_state: str, expert_advice: str) -> List[Dict[str, str]]
         "You are the Defuser Bot. Your ONLY task is to read the bomb state and then the expert’s advice, "
         "and emit exactly ONE valid game command—no explanations, no extra text. "
         "There is only ONE exception to this rule:"
-        "If you are in the memory module, print the label and position of the button you should press and then the command in the next line."
+        "If you are in the memory module, print the label, position and the stage of the button (with descriptions) you should press and then the command in the next line."
         "If the expert gives advice, you MUST follow it verbatim. Do NOT contradict or ignore it. "
         "Allowed commands (exactly as written):\n"
         "  • cut wire <number>\n"
         "  • press <color_or_label>\n"
+        "  • press "
         "  • hold\n"
         "  • release on <number>\n"
     )
 
     user_msg = (
-        f"BOMB_STATE:\n{bomb_state}\n\n"
-        f"EXPERT_ADVICE:\n{expert_advice}\n\n"
-        "IF YOU ARE IN THE MEMORY MODULE, PRINT THE LABEL AND POSITION (with appropriate names) OF THE BUTTON YOU SHOULD PRESS AND THEN THE COMMAND IN THE NEXT LINE."
+        f"BOMB_STATE:"
+        "---Bomb State Information Start---"
+        f"\n{bomb_state}\n\n"
+        "---Bomb State Information End---\n\n"
+        f"EXPERT_ADVICE:"
+        "---Expert Advice Start---"
+        f"\n{expert_advice}\n\n"
+        "---Expert Advice End---\n\n"
+        "IF YOU ARE IN THE MEMORY MODULE, PRINT THE LABEL, STAGE AND THE POSITION (with appropriate names) OF THE BUTTON YOU SHOULD PRESS AND THEN THE COMMAND IN THE NEXT LINE."
         "OUTPUT COMMAND ONLY:"
     )
 
@@ -443,14 +450,16 @@ def expert_prompt4(manual_text: str, defuser_description: str, history: List[str
     {manual_text}
     --- Manual Excerpt End ---
 
+    **You are also provided with the following history of the Defuser's actions:**
+    {" ".join(history)}
+
     **GENERAL INSTRUCTIONS FOR ALL MODULES:**
 
     2.  **Clarity:** Your instruction must be unambiguous and tell the Defuser exactly what to do next.
     3.  **Reasoning:** 
     4.  **Single Action:** Provide only one action. The Defuser will report back, and you will then instruct the next step. 
 
-    **You are also provided with the following history of the Defuser's actions:**
-    {" ".join(history)}
+
 
     **SPECIAL INSTRUCTIONS -- APPLY THESE *ONLY IF* THE MANUAL EXCERPT IS FOR THE 'SIMON SAYS' MODULE:**
     The Simon Says module requires careful interpretation of the manual.
@@ -477,11 +486,13 @@ def expert_prompt4(manual_text: str, defuser_description: str, history: List[str
     3.  **Determining Button Presses:**
         *   The Defuser will report a sequence of flashing light colors and the inputs.
         *   If none inputs were pressed yet, use the first light in the flashing sequence.
-        *   If the button says "Press a colored button to start sequence", use the first light in the flashing sequence.
+        *   If the Defuser provided no inputs, use the first light in the flashing sequence.
+        *   If the button says "Press a colored button to start sequence" or haven't mentioned the previous inputs, use the first light in the flashing sequence.
         *   If N inputs were pressed already, use the light in the flashing sequence which is at the position corresponding to the N+1.
-        *   Analyse the number of inputs provided -- use the adequate light in the flashing sequence.
+        *   Repeat each color in the input and count them accordingly. Deduce the adequate light in the flashing sequence.
         *   Provide the reasoning for your choice and make sure that it is correct, as it is a crucial part.  
-        *   Reflect upon your choice and double check that it is correct.     
+        *   Reflect upon your choice and double check that it is correct. 
+        *   YOU SHOULD ALWAYS DOUBLE CHECK YOUR CHOICE IN YOUR REASONING.
         *   For the chosen color in the flashing sequence, in order:
             a.  Note its color (e.g., Red).
             b.  Note its position in the flashing sequence (e.g., 1st, 2nd, 3rd).
